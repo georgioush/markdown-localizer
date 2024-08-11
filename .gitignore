@@ -1,0 +1,38 @@
+# Created by https://www.gitignore.io/api/python,visualstudiocode,pycharm,linux,macos,windows
+# Edit at https://www.gitignore.io/?templates=python,visualstudiocode,pycharm,linux,macos,windows
+
+### Linux ###
+*~
+
+### macOS ###
+# General
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon
+._*
+
+### Windows ###
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+# =========================
+# Operating System Files
+# =========================
+
+# vscode ###
+.vscode/
+.vscode-test/
+
+# pycharm ###
+.idea/
+*.iml
+
+# python ###
+__pycache__/
+*.py[cod]
+*$py.class
+.python-version
+
+# Custom gitignore ###
+Translated

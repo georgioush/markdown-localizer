@@ -1,0 +1,15 @@
+- init.py を実行する
+- 対象となる ADO Wiki を Clone する
+- .config.json の中身を修正する。
+  - 具体的にはどのディレクトリは翻訳対象にしないかなど
+  - また ADO Wiki の名前を original として指定する
+- prompts 配下の prompts_selector.json を編集する
+  - (Optional) 自分の国の言語に合わせてフォルダを作成 (例 ja-jp) し、その配下に system_prompt.md および user_prompt.md を配置する
+    - prompt_selector.json のパスを修正する
+  - もしとりあえず現状の prompt でよいのであれば language を自分の国の言語にする
+- main.py を実行する
+  - なお、環境変数において以下が正常に設定していることを前提としている。
+    - AZURE_OPENAI_API_KEY
+    - AZURE_OPENAI_ENDPOINT
+    - AZURE_OPENAI_DEPLOYMENT_NAME
+    - AZURE_OPENAI_API_VERSION
