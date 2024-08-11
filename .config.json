@@ -1,8 +1,0 @@
-{
-    "repo": "Original-ADO-Repo-Name",
-    "out_repo": "Translated",
-    "EXCLUDE_DIRS": [
-        "Original-ADO-Repo-Name/Directory-A",
-        "Original-ADO-Repo-Name/Directory-B/SubDirectory"
-    ]
-}
