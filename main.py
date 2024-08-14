@@ -55,10 +55,6 @@ if __name__ == "__main__":
         shutil.copytree(source_dir, destination_dir)
 
     for md_file_path in markdown_files_paths:
-    # DEBUG
-    # for test in range(1):
-        # md_file_path = "full path like C:/Users/username/something.md"
-
         markdown_handler = MarkdownHandler(md_file_path)
 
         # 中身がない場合はスキップ
@@ -87,8 +83,9 @@ if __name__ == "__main__":
             # AOAI にリクエストを送信し、結果を取得
             markdown_handler.translated_content += aoai_handler.execute(messages)
 
-        # md_file_path のディレクトリを ADO Wiki の repo から Translated に変更
-        md_file_path = md_file_path.replace(repo, out_repo)
+        # Translated のパスに md_file_path を変更
+        md_file_path = md_file_path.replace(source_dir, destination_dir)
+
         with open(md_file_path, 'w', encoding='utf-8') as output_file:
             output_file.write(markdown_handler.translated_content)
 
