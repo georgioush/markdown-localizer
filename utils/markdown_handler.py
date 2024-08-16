@@ -1,6 +1,8 @@
 import os
 import re
 import sys
+import chardet
+import subprocess
 from utils.token_counter import TokenCounter
 from colorama import Fore, Style, init
 
@@ -23,20 +25,91 @@ HEADER_PATTERNS = [
 
 MAX_TOKENS = 2048
 
+TRANSALTION_MARKER = "<!-- TRANSLATED -->"
+
 class MarkdownHandler:
     def __init__(self, markdown_path):
         self.markdown_path = os.path.normpath(markdown_path)
     
-        try:
-            with open(self.markdown_path, 'r', encoding='utf-8') as file:
-                 self.markdown = file.read()
-        except FileNotFoundError:
-            raise Exception(f"Failed to open {self.markdown_path} Please make sure the file exists.")
+class MarkdownHandler:
+    def __init__(self, markdown_path):
+        self.markdown_path = os.path.normpath(markdown_path)
+
+        # ファイルをバイナリモードで開き、エンコーディングを検出
+        with open(self.markdown_path, 'rb') as file:
+            raw_data = file.read()
+            result = chardet.detect(raw_data)
+            encoding = result['encoding']
+            confidence = result['confidence']
+
+        # 検出されたエンコーディングが UTF-8 でないか、信頼性が低い場合は再試行
+        if encoding != 'utf-8' or confidence < 0.5:
+            print(f"Detected encoding: {encoding} (Confidence: {confidence})")
+            print(f"Converting {self.markdown_path} from {encoding} to UTF-8.")
+            try:
+                # Try to read the file with detected encoding
+                with open(self.markdown_path, 'r', encoding=encoding, errors='replace') as file:
+                    content = file.read()
+                
+                # Now encode the content to UTF-8 and rewrite the file
+                with open(self.markdown_path, 'w', encoding='utf-8', errors='replace') as file:
+                    file.write(content)
+                
+                self.markdown = content
+
+            except UnicodeDecodeError:
+                print(f"Error decoding with {encoding}, trying fallback encoding 'utf-8'.")
+                with open(self.markdown_path, 'r', encoding='utf-8', errors='replace') as file:
+                    content = file.read()
+                
+                # Re-write the file in UTF-8
+                with open(self.markdown_path, 'w', encoding='utf-8', errors='replace') as file:
+                    file.write(content)
+                
+                self.markdown = content
+        else:
+            # If UTF-8 was correctly detected
+            with open(self.markdown_path, 'r', encoding='utf-8', errors='replace') as file:
+                content = file.read()
+            self.markdown = content
 
         self.tokenized_sections = []
         self.translated_content = ""
         self.summarized_content = ""
+        self.recent_commit_date = self.check_recent_commit()
 
+    def check_recent_commit(self):
+        try:
+            # git log を使って、特定のファイルの最も直近のコミット日時を取得する
+            result = subprocess.run(
+                ['git', 'log', '-1', '--format=%cd', '--', self.markdown_path],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+                cwd=os.path.dirname(self.markdown_path)
+            )
+            if result.returncode == 0:
+                # コミット日時を返す
+                return result.stdout.strip()
+            else:
+                # エラーメッセージを表示
+                print(f"Error retrieving recent commit: {result.stderr}")
+                return None
+        except Exception as e:
+            print(f"An error occurred while retrieving the recent commit date: {e}")
+            return None
+
+    def is_translated(self):
+        # self.markdown の最初の行に <!-- TRANSLATED --> が含まれているかを確認する
+        return self.markdown.startswith(TRANSALTION_MARKER)
+
+    def write_content(self, content):
+        # ファイルをバイナリモードで開き、エンコーディングを検出
+        with open(self.markdown_path, 'w', encoding='utf-8') as file:
+
+            file.write(TRANSALTION_MARKER + "\n")
+            file.write(content)
+        
     def tokenize_as_translation(self):
         token_counter = TokenCounter()
 

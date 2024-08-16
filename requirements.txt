@@ -1,3 +1,6 @@
 colorama
 openai
 tiktoken
+chardet
+datetime
+pytz

@@ -1,8 +1,9 @@
 {
-    "repo": "Original-ADO-Repo-Name",
+    "repo": "repo name",
     "out_repo": "Translated",
     "EXCLUDE_DIRS": [
-        "Original-ADO-Repo-Name/Directory-A",
-        "Original-ADO-Repo-Name/Directory-B/SubDirectory"
-    ]
+        "repo name/some path/",
+        "repo name/some other path/sub directory"
+    ],
+    "translation_commit_deadline": "1 week ago"
 }
