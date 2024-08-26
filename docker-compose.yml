@@ -1,0 +1,11 @@
+version: "3"
+
+services:
+  app:
+    build: .
+    environment:
+      - TZ=Asia/Tokyo
+    volumes:
+      - ./:/usr/src
+    working_dir: /usr/src
+    tty: true
