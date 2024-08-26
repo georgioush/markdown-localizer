@@ -6,15 +6,15 @@ import subprocess
 from utils.token_counter import TokenCounter
 from colorama import Fore, Style, init
 
-# Windowsでも動作するように初期化
+# Initialize for Windows compatibility
 init()
 
-# 現在のファイルのディレクトリを取得
+# Get the directory of the current file
 current_dir = os.path.dirname(os.path.abspath(__file__))
-# 親ディレクトリをモジュール検索パスに追加
+# Add the parent directory to the module search path
 sys.path.append(os.path.join(current_dir, '..'))
 
-# ヘッダー部を捉えるための正規表現 
+# Regular expressions to capture header sections
 HEADER_PATTERNS = [
     (1, r'(?:^|\n)\s*(#\s*.+?)(?=(?:\n\s*#|\n\Z|\Z))'),
     (2, r'(?:^|\n)\s*(##\s*.+?)(?=(?:\n\s*##|\n\Z|\Z))'),
@@ -25,24 +25,20 @@ HEADER_PATTERNS = [
 
 MAX_TOKENS = 2048
 
-TRANSALTION_MARKER = "<!-- TRANSLATED -->"
+TRANSLATION_MARKER = "<!-- TRANSLATED -->"
 
 class MarkdownHandler:
     def __init__(self, markdown_path):
         self.markdown_path = os.path.normpath(markdown_path)
-    
-class MarkdownHandler:
-    def __init__(self, markdown_path):
-        self.markdown_path = os.path.normpath(markdown_path)
 
-        # ファイルをバイナリモードで開き、エンコーディングを検出
+        # Open the file in binary mode and detect encoding
         with open(self.markdown_path, 'rb') as file:
             raw_data = file.read()
             result = chardet.detect(raw_data)
             encoding = result['encoding']
             confidence = result['confidence']
 
-        # 検出されたエンコーディングが UTF-8 でないか、信頼性が低い場合は再試行
+        # Retry if detected encoding is not UTF-8 or confidence is low
         if encoding != 'utf-8' or confidence < 0.5:
             print(f"Detected encoding: {encoding} (Confidence: {confidence})")
             print(f"Converting {self.markdown_path} from {encoding} to UTF-8.")
@@ -80,7 +76,7 @@ class MarkdownHandler:
 
     def check_recent_commit(self):
         try:
-            # git log を使って、特定のファイルの最も直近のコミット日時を取得する
+            # Use git log to get the most recent commit date for a specific file
             result = subprocess.run(
                 ['git', 'log', '-1', '--format=%cd', '--', self.markdown_path],
                 stdout=subprocess.PIPE,
@@ -89,10 +85,10 @@ class MarkdownHandler:
                 cwd=os.path.dirname(self.markdown_path)
             )
             if result.returncode == 0:
-                # コミット日時を返す
+                # Return the commit date
                 return result.stdout.strip()
             else:
-                # エラーメッセージを表示
+                # Display error message
                 print(f"Error retrieving recent commit: {result.stderr}")
                 return None
         except Exception as e:
@@ -100,26 +96,25 @@ class MarkdownHandler:
             return None
 
     def is_translated(self):
-        # self.markdown の最初の行に <!-- TRANSLATED --> が含まれているかを確認する
-        return self.markdown.startswith(TRANSALTION_MARKER)
+        # Check if the first line of self.markdown contains <!-- TRANSLATED -->
+        return self.markdown.startswith(TRANSLATION_MARKER)
 
     def write_content(self, content):
-        # ファイルをバイナリモードで開き、エンコーディングを検出
+        # Open the file in binary mode and detect encoding
         with open(self.markdown_path, 'w', encoding='utf-8') as file:
-
-            file.write(TRANSALTION_MARKER + "\n")
+            file.write(TRANSLATION_MARKER + "\n")
             file.write(content)
         
     def tokenize_as_translation(self):
         token_counter = TokenCounter()
 
-        # もしファイル自体が Token サイズ以下ならそのまま返して処理をさせる。
+        # If the entire file is within the token size limit, return it as is
         if MAX_TOKENS > token_counter.count_tokens(self.markdown):
             self.tokenized_sections = [self.markdown]
             print("Section Size:", f"{token_counter.count_tokens(self.markdown)}")
             return 
         
-        # もしファイルが Token サイズを超えている場合、ヘッダーでセクションに分割して処理をさせる。
+        # If the file exceeds the token size limit, split it into sections by headers
         level = 0 
         pattern = HEADER_PATTERNS[level][1]
 
@@ -159,17 +154,17 @@ class MarkdownHandler:
         print(f"{Fore.RED}/---\n LARGE SECTION DETECTED\nSplitting large section\n---/{Style.RESET_ALL}")
 
         token_counter = TokenCounter()
-        # section は markdown の一部なので、まずは行数を数える
+        # Since section is a part of markdown, first count the number of lines
         lines = section.split('\n')
         line_count = len(lines)
 
-        # section のトークン数を max_tokens で割った商を求める なお、端数を切り上げた自然数にする
+        # Calculate the number of sections by dividing the token count of the section by max_tokens, rounding up
         section_num = -(-token_counter.count_tokens(section) // MAX_TOKENS)
 
-        # line_count を section_num で割り、分割セクションの行数を決定する 念の為行数を 1 つ減らす
+        # Determine the number of lines per split section by dividing line_count by section_num, subtracting one line for safety
         split_line_count = line_count // section_num - 1 
 
-        # 最初の行数から split_line_count ずつ取り出して、分割セクションを作成する
+        # Create split sections by taking split_line_count lines at a time from the initial line count
         tokenized_sections = []
         for i in range(section_num):
             start = i * split_line_count
