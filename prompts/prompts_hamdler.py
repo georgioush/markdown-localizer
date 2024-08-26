@@ -15,7 +15,7 @@ class PromptHandler:
 
         self.language = data["language"]
 
-        # json_file のファイルの dir path を取得
+        # Get the directory path of the json_file
         json_dir = os.path.dirname(json_file_path)
         system_prompt_path = data['system']
         user_prompt_path = data['user']
@@ -31,7 +31,7 @@ class PromptHandler:
             user_prompt_file_path = os.path.join(json_dir, user_prompt_path)
             with open(user_prompt_file_path, "r", encoding="utf-8") as f:
                 
-                self.user_prompt = f"以下の言語に翻訳してください\n\n{self.language}\n\n"
+                self.user_prompt = f"Please translate the following content into\n\n{self.language}\n\n"
                 self.user_prompt += f.read()
         except FileNotFoundError:
             raise Exception(f"Failed to open {user_prompt_file_path} Please make sure the file exists.")
@@ -53,9 +53,8 @@ if __name__ == "__main__":
 
     prompt_handler = PromptHandler()
     
-    # 一旦中身を確認するために prompt を print して、またsytem か user かわかりやすくして。
+    # Print the prompts for verification
     print("//---\nSystem Prompt:\n---//")
     print(prompt_handler.system_prompt)
     print("//---\nUser Prompt:\n---//")
     print(prompt_handler.user_prompt)
-
