@@ -28,6 +28,7 @@ stages:
     #     AZURE_OPENAI_API_KEY: $(AZURE_OPENAI_API_KEY)  # secret variable
 
     - script: |
+        mkdir -p Translated
         echo "This is a test file." > Translated/test.txt
       displayName: 'Create test.txt in Translated folder'
 
