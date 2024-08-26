@@ -19,11 +19,11 @@ stages:
       persistCredentials: true
 
     - script: |
-        rsync -av --ignore-existing $(Agent.TempDirectory)/translated/ $(Build.ArtifactStagingDirectory)/$(PUBLISH_WIKI_REPOS_NAME)/
+        rsync -av --exclude='.git' --ignore-existing $(Agent.TempDirectory)/translated/ $(Build.SourcesDirectory)/
       displayName: 'Copy translated to wiki repo'
     
     - script: |
-        cd $(Build.ArtifactStagingDirectory)/$(PUBLISH_WIKI_REPOS_NAME)
+        git checkout master
         git config --global user.name  "localizer-automation"
         git config --global user.email "localizer-automation@users.noreply.microsoft.com"
         git add .
