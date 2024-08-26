@@ -7,19 +7,19 @@ stages:
     pool:
       vmImage: 'ubuntu-latest'
     steps:
-    - task: UsePythonVersion@0
-      inputs:
-        versionSpec: '3.9'
-        addToPath: true
+    # - task: UsePythonVersion@0
+    #   inputs:
+    #     versionSpec: '3.9'
+    #     addToPath: true
 
-    - script: |
-        echo "Installing dependencies"
-        python -m pip install --upgrade pip
-        pip install -r requirements.txt
-      displayName: 'Install dependencies'
+    # - script: |
+    #     echo "Installing dependencies"
+    #     python -m pip install --upgrade pip
+    #     pip install -r requirements.txt
+    #   displayName: 'Install dependencies'
 
-    - script: |
-        git clone https://$(TARGET_WIKI_PAT)@$(TARGET_WIKI_DOMAIN_URL)
+    # - script: |
+    #     git clone https://$(TARGET_WIKI_PAT)@$(TARGET_WIKI_DOMAIN_URL)
 
     # - script: |
     #     python main.py

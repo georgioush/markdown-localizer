@@ -18,12 +18,8 @@ stages:
     - checkout: git://$(System.TeamProject)/$(PUBLISH_WIKI_REPOS_NAME)
       persistCredentials: true
 
-    - task: CopyFiles@2
-      inputs:
-        SourceFolder: '$(Agent.TempDirectory)/translated'
-        Contents: '**'
-        TargetFolder: '$(Build.ArtifactStagingDirectory)/$(PUBLISH_WIKI_REPOS_NAME)'
-        OverWrite: true
+    - script: |
+        rsync -av --ignore-existing $(Agent.TempDirectory)/translated/ $(Build.ArtifactStagingDirectory)/$(PUBLISH_WIKI_REPOS_NAME)/
       displayName: 'Copy translated to wiki repo'
     
     - script: |
