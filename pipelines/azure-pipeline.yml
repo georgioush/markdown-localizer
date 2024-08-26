@@ -1,0 +1,19 @@
+trigger: none
+
+schedules:
+- cron: "0 0 * * 1"
+  displayName: Weekly Monday 0 AM build (UTC)
+  branches:
+    include:
+    - 'main'
+  always: true
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+variables:
+- group: 'wiki-translator'
+
+stages:
+- template: stages/generate-translated.yml
+- template: stages/publish-to-wiki.yml
