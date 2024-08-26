@@ -2,7 +2,7 @@ import os
 import subprocess
 
 def main():
-    # git update-index --assume-unchanged config.json を実行
+    # Execute git update-index --assume-unchanged config.json
     try:
         subprocess.run(["git", "update-index", "--assume-unchanged", "config.json"], check=True)
         print("Successfully set config.json to assume unchanged.")

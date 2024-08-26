@@ -1,26 +1,26 @@
-## 手順
+## Steps
 
-1. **初期化スクリプトの実行**
-   - `init.py` を実行して初期設定を行います。
+1. **Run Initialization Script**
+   - Execute `init.py` to perform initial setup.
 
-2. **ADO Wiki のクローン**
-   - 対象となる ADO Wiki をクローンします。
+2. **Clone ADO Wiki**
+   - Clone the target ADO Wiki.
 
-3. **設定ファイルの修正**
-   - `config.json` の内容を修正します。
-     - 具体的には、どのディレクトリを翻訳対象にしないかなどを設定します。
-     - また、ADO Wiki の名前を `original` として指定します。
+3. **Modify Configuration File**
+   - Edit the contents of `config.json`.
+     - Specifically, configure which directories should not be translated.
+     - Also, specify the name of the ADO Wiki as `original`.
 
-4. **プロンプト設定の編集**
-   - `prompts` 配下の `prompt_selector.json` を編集します。
-     - (オプション) 自分の国の言語に合わせてフォルダを作成します (例: `ja-jp`)。
-       - その配下に `system_prompt.md` および `user_prompt.md` を配置します。
-       - `prompt_selector.json` のパスを修正します。
-     - 現状のプロンプトで問題ない場合は、`language` を自分の国の言語に設定します。
+4. **Edit Prompt Settings**
+   - Edit `prompt_selector.json` under the `prompts` directory.
+     - (Optional) Create a folder for your language (e.g., `ja-jp`).
+       - Place `system_prompt.md` and `user_prompt.md` under that folder.
+       - Update the path in `prompt_selector.json`.
+     - If the current prompts are fine, set `language` to your language.
 
-5. **メインスクリプトの実行**
-   - `main.py` を実行します。
-     - なお、以下の環境変数が正常に設定されていることを前提としています。
+5. **Run Main Script**
+   - Execute `main.py`.
+     - Ensure the following environment variables are properly set:
        - `AZURE_OPENAI_API_KEY`
        - `AZURE_OPENAI_ENDPOINT`
        - `AZURE_OPENAI_DEPLOYMENT_NAME`
