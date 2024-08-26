@@ -1,0 +1,36 @@
+stages:
+- stage:
+  displayName: 'Publish to wiki'
+  
+  jobs:
+  - job:
+    pool:
+      vmImage: 'ubuntu-latest'
+    steps:
+    - task: DownloadPipelineArtifact@2
+
+    - task: ExtractFiles@1
+      inputs:
+        archiveFilePatterns: '$(Pipeline.Workspace)/output/translated.zip'
+        cleanDestinationFolder: false
+        destinationFolder: '$(Agent.TempDirectory)/translated'
+
+    - checkout: git://$(System.TeamProject)/$(PUBLISH_WIKI_REPOS_NAME)
+      persistCredentials: true
+
+    - task: CopyFiles@2
+      inputs:
+        SourceFolder: '$(Agent.TempDirectory)/translated'
+        Contents: '**'
+        TargetFolder: '$(Build.ArtifactStagingDirectory)/$(PUBLISH_WIKI_REPOS_NAME)'
+        OverWrite: true
+      displayName: 'Copy translated to wiki repo'
+    
+    - script: |
+        cd $(Build.ArtifactStagingDirectory)/$(PUBLISH_WIKI_REPOS_NAME)
+        git config --global user.name  "localizer-automation"
+        git config --global user.email "localizer-automation@users.noreply.microsoft.com"
+        git add .
+        git commit -m "Publish from localizer pipeline, commit: $(Build.SourceVersion)"
+        git push origin $(branch)
+      displayName: 'Commit & push to wiki'
