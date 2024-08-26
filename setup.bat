@@ -1,9 +1,9 @@
 @echo off
 
-REM 仮想環境のディレクトリ名
+REM Directory name for the virtual environment
 set VENV_DIR=venv
 
-REM 仮想環境が既に存在するか確認
+REM Check if the virtual environment already exists
 if exist %VENV_DIR% (
     echo Activating the virtual environment.
 ) else (
@@ -14,8 +14,8 @@ if exist %VENV_DIR% (
     pip install -r requirements.txt
 )
 
-REM 仮想環境を有効化
+REM Activate the virtual environment
 call %VENV_DIR%\Scripts\activate
 
-REM init.py を実行
+REM Execute init.py
 python init.py
