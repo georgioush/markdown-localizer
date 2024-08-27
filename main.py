@@ -7,6 +7,8 @@ from colorama import Fore, Style, init
 import json
 from datetime import datetime, timedelta
 import pytz
+from concurrent.futures import ThreadPoolExecutor, as_completed
+import time
 
 # Initialize for Windows compatibility
 init()
@@ -59,6 +61,81 @@ def parse_relative_time(relative_time_str):
             number = int(relative_time_str.split()[0])
             return now - time_map[unit] * number
 
+def process_markdown_file(md_file_path, source_dir, destination_dir):
+    try:
+        markdown_handler = MarkdownHandler(md_file_path)
+    except Exception as e:
+        print(f"Error reading {md_file_path}: {e}")
+        return
+
+    # Skip if the content is empty
+    if markdown_handler.markdown == "":
+        return
+
+    # Skip if the file is already translated
+    destination_file_path = md_file_path.replace(source_dir, destination_dir)
+    destination_file = MarkdownHandler(destination_file_path)
+
+    # Check if already translated and skip if the recent commit is not recent
+    if destination_file.is_translated():
+        recent_commit_date = parse_git_date(markdown_handler.recent_commit_date)
+        commit_deadline = parse_relative_time(translation_commit_deadline)
+
+        # Skip if recent_commit_date is older than commit_deadline
+        if recent_commit_date <= commit_deadline:
+            print(f"{Fore.GREEN}/----\n recent_commit_date is old and passed commit_deadline\n----/{Style.RESET_ALL}")
+            return
+
+    print(f"//----------------\nProcessing {md_file_path}")
+
+    # Tokenize for translation
+    markdown_handler.tokenize_as_translation()
+
+    for section in markdown_handler.tokenized_sections:
+        if section == "":
+            continue
+
+        # Prompt generation
+        prompt_handler = PromptHandler()
+        aoai_handler = AOAIHandler()
+
+        # Add to User Prompt
+        prompt_handler.add_user_prompt(section)
+        # Create messages
+        messages = prompt_handler.create_messages()
+
+        # if "DEBUG" in os.environ:
+        #     print(f"\n Hers is message: \n{messages}\n")
+
+        # Send request to AOAI and get the result with retry and backoff strategy
+        retry_count = 0
+        max_retries = 5
+        backoff_factor = 2
+
+        while retry_count < max_retries:
+            try:
+                response = aoai_handler.execute(messages)
+                markdown_handler.translated_content += response
+                break
+            except Exception as e:
+                retry_count += 1
+                wait_time = backoff_factor ** retry_count
+                print(f"Error: {e}. Retrying in {wait_time} seconds...")
+                time.sleep(wait_time)
+                if retry_count == max_retries:
+                    print(f"Failed to process {md_file_path} after {max_retries} retries.")
+                    return
+
+    destination_file.write_content(markdown_handler.translated_content)
+
+    # Split translated_content by lines
+    lines = markdown_handler.translated_content.splitlines()
+    # Get and print the last 5 lines
+    for line in lines[-5:]:
+        print(f"{Fore.GREEN}{line}{Style.RESET_ALL}")
+
+    print(f"\nTranslated content has been written to {destination_file_path}\n----------------//\n")
+
 if __name__ == "__main__":
     # Specify the repository to search
     repository_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), repo)
@@ -75,57 +152,8 @@ if __name__ == "__main__":
     if not os.path.exists(destination_dir):
         shutil.copytree(source_dir, destination_dir)
 
-    for md_file_path in markdown_files_paths:
-        markdown_handler = MarkdownHandler(md_file_path)
-
-        # Skip if the content is empty
-        if markdown_handler.markdown == "":
-            continue
-
-        # Skip if the file is already translated
-        destination_file_path = md_file_path.replace(source_dir, destination_dir)
-        destination_file = MarkdownHandler(destination_file_path)
-
-        # Check if already translated and skip if the recent commit is not recent
-        if destination_file.is_translated():
-            recent_commit_date = parse_git_date(markdown_handler.recent_commit_date)
-            commit_deadline = parse_relative_time(translation_commit_deadline)
-
-            # Skip if recent_commit_date is older than commit_deadline
-            if recent_commit_date <= commit_deadline:
-                print(f"{Fore.GREEN}/----\n recent_commit_date is old and passed commit_deadline\n----/{Style.RESET_ALL}")
-                continue
-
-        print(f"//----------------\nProcessing {md_file_path}")
-
-        # Tokenize for translation
-        markdown_handler.tokenize_as_translation()
-
-        for section in markdown_handler.tokenized_sections:
-            if section == "":
-                continue
-
-            # Prompt generation
-            prompt_handler = PromptHandler()
-            aoai_handler = AOAIHandler()
-
-            # Add to User Prompt
-            prompt_handler.add_user_prompt(section)
-            # Create messages
-            messages = prompt_handler.create_messages()
-
-            # if "DEBUG" in os.environ:
-            #     print(f"\n Hers is message: \n{messages}\n")
-
-            # Send request to AOAI and get the result
-            markdown_handler.translated_content += aoai_handler.execute(messages)
-
-        destination_file.write_content(markdown_handler.translated_content)
-
-        # Split translated_content by lines
-        lines = markdown_handler.translated_content.splitlines()
-        # Get and print the last 5 lines
-        for line in lines[-5:]:
-            print(f"{Fore.GREEN}{line}{Style.RESET_ALL}")
-
-        print(f"\nTranslated content has been written to {destination_file_path}\n----------------//\n")
+    # Use ThreadPoolExecutor to process files in parallel
+    with ThreadPoolExecutor() as executor:
+        futures = [executor.submit(process_markdown_file, md_file_path, source_dir, destination_dir) for md_file_path in markdown_files_paths]
+        for future in as_completed(futures):
+            future.result()  # Wait for all futures to complete
