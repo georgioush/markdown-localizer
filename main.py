@@ -109,7 +109,7 @@ def process_markdown_file(md_file_path, source_dir, destination_dir):
 
         # Send request to AOAI and get the result with retry and backoff strategy
         retry_count = 0
-        max_retries = 5
+        max_retries = 10
         backoff_factor = 2
 
         while retry_count < max_retries:
@@ -119,9 +119,9 @@ def process_markdown_file(md_file_path, source_dir, destination_dir):
                 break
             except Exception as e:
                 retry_count += 1
-                wait_time = backoff_factor ** retry_count
-                print(f"Error: {e}. Retrying in {wait_time} seconds...")
-                time.sleep(wait_time)
+                wait_time = min(2 * retry_count, 10)  # Start with 2 minutes, then 3, 4, 5, up to 10 minutes
+                print(f"Error: {e}. Retrying in {wait_time} minutes...")
+                time.sleep(wait_time * 60)  # Convert minutes to seconds
                 if retry_count == max_retries:
                     print(f"Failed to process {md_file_path} after {max_retries} retries.")
                     return
@@ -145,15 +145,28 @@ if __name__ == "__main__":
         for md_file in markdown_files_paths:
             print(md_file)
 
+    print(f"File total: {len(markdown_files_paths)}")
+
     # Copy the target directory as it is to create a Translated folder.
     source_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), repo)
     destination_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), out_repo)
 
+    # markdown_files_paths にファイルが存在するかをすべて for 文でチェックし、失敗するものを表示する。
+    for md_file_path in markdown_files_paths:
+        if not os.path.exists(md_file_path):
+            print(f"{Fore.RED}File not found: {md_file_path}{Style.RESET_ALL}")
+
+
     if not os.path.exists(destination_dir):
         shutil.copytree(source_dir, destination_dir)
 
-    # Use ThreadPoolExecutor to process files in parallel
-    with ThreadPoolExecutor() as executor:
+    # Ensure the copy operation is complete before proceeding
+    while not os.path.exists(destination_dir):
+        time.sleep(1)
+
+    # Use ThreadPoolExecutor to process files in parallel with a maximum of 5 threads
+    max_workers = 20
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
         futures = [executor.submit(process_markdown_file, md_file_path, source_dir, destination_dir) for md_file_path in markdown_files_paths]
         for future in as_completed(futures):
             future.result()  # Wait for all futures to complete
