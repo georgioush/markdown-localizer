@@ -1,5 +1,6 @@
 import os
 import shutil
+from shutil import ignore_patterns
 from prompts.prompts_hamdler import PromptHandler
 from utils.aoai_handler import AOAIHandler
 from utils.markdown_handler import MarkdownHandler
@@ -83,7 +84,7 @@ def process_markdown_file(md_file_path, source_dir, destination_dir):
 
         # Skip if recent_commit_date is older than commit_deadline
         if recent_commit_date <= commit_deadline:
-            print(f"{Fore.GREEN}/----\n recent_commit_date is old and passed commit_deadline\n----/{Style.RESET_ALL}")
+            print(f"{Fore.GREEN}/----\n The latest commit date is not recent and is outside the translation commit deadline\n----/{Style.RESET_ALL}")
             return
 
     print(f"//----------------\nProcessing {md_file_path}")
@@ -104,9 +105,6 @@ def process_markdown_file(md_file_path, source_dir, destination_dir):
         # Create messages
         messages = prompt_handler.create_messages()
 
-        # if "DEBUG" in os.environ:
-        #     print(f"\n Hers is message: \n{messages}\n")
-
         # Send request to AOAI and get the result with retry and backoff strategy
         retry_count = 0
         max_retries = 10
@@ -115,7 +113,10 @@ def process_markdown_file(md_file_path, source_dir, destination_dir):
         while retry_count < max_retries:
             try:
                 response = aoai_handler.execute(messages)
-                markdown_handler.translated_content += response
+                if response is None:
+                    print(f"Received None response from AOAIHandler for {md_file_path}")
+                else:
+                    markdown_handler.translated_content += response
                 break
             except Exception as e:
                 retry_count += 1
@@ -151,21 +152,21 @@ if __name__ == "__main__":
     source_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), repo)
     destination_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), out_repo)
 
-    # markdown_files_paths にファイルが存在するかをすべて for 文でチェックし、失敗するものを表示する。
+    # Check whether files on markdown_files_paths exist
     for md_file_path in markdown_files_paths:
         if not os.path.exists(md_file_path):
             print(f"{Fore.RED}File not found: {md_file_path}{Style.RESET_ALL}")
 
 
     if not os.path.exists(destination_dir):
-        shutil.copytree(source_dir, destination_dir)
+        shutil.copytree(source_dir, destination_dir, ignore=ignore_patterns('.git'))
 
     # Ensure the copy operation is complete before proceeding
     while not os.path.exists(destination_dir):
         time.sleep(1)
 
     # Use ThreadPoolExecutor to process files in parallel with a maximum of 5 threads
-    max_workers = 20
+    max_workers = 100
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
         futures = [executor.submit(process_markdown_file, md_file_path, source_dir, destination_dir) for md_file_path in markdown_files_paths]
         for future in as_completed(futures):
